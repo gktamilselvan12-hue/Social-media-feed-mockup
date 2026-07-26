@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Anchor — send log</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --rock:#201C18;
+    --panel:#2A2520;
+    --panel-2:#332D26;
+    --line:rgba(240,235,224,0.09);
+    --chalk:#F0EBE0;
+    --slate:#8A8F86;
+    --rope:#C1542C;
+    --rope-dim:#4A2A1C;
+    --moss:#6B8F71;
+    --moss-dim:#233024;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:var(--rock);
+    color:var(--chalk);
+    font-family:'Work Sans',sans-serif;
+    min-height:100vh;
+  }
+  a{ color:inherit; }
+  button{ font-family:inherit; }
+
+  /* topo texture backdrop */
+  body::before{
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      repeating-radial-gradient(circle at 20% 15%, transparent 0, transparent 38px, rgba(240,235,224,0.025) 39px, transparent 40px, transparent 78px),
+      repeating-radial-gradient(circle at 85% 70%, transparent 0, transparent 46px, rgba(240,235,224,0.02) 47px, transparent 48px, transparent 94px);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .shell{
+    position:relative; z-index:1;
+    max-width:1100px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:1fr 300px;
+    gap:0;
+  }
+  @media (max-width:880px){
+    .shell{ grid-template-columns:1fr; }
+    .side{ display:none; }
+  }
+
+  /* header */
+  header{
+    position:sticky; top:0; z-index:5;
+    background:rgba(32,28,24,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    grid-column:1 / -1;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px;
+  }
+  .logo{
+    font-family:'Fraunces',serif;
+    font-weight:700;
+    font-size:21px;
+    letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .logo .mark{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--rope);
+  }
+  .hdr-icons{ display:flex; gap:18px; color:var(--slate); font-size:13px; font-family:'JetBrains Mono',monospace; }
+  .hdr-icons span{ cursor:pointer; }
+  .hdr-icons span:hover{ color:var(--chalk); }
+
+  main{ padding:0 20px 60px; border-right:1px solid var(--line); }
+
+  /* partners rail */
+  .rail{
+    display:flex; gap:16px; overflow-x:auto;
+    padding:20px 2px 22px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:22px;
+  }
+  .rail::-webkit-scrollbar{ display:none; }
+  .partner{
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    flex-shrink:0; width:64px;
+    cursor:pointer;
+  }
+  .avatar-ring{
+    width:56px; height:56px; border-radius:50%;
+    background:conic-gradient(var(--rope), var(--moss), var(--rope));
+    padding:2.5px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .avatar-ring.seen{ background:var(--line); }
+  .avatar{
+    width:100%; height:100%; border-radius:50%;
+    background:var(--panel-2);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:600; font-size:16px;
+    border:2px solid var(--rock);
+  }
+  .partner .name{ font-size:11px; color:var(--slate); font-family:'JetBrains Mono',monospace; }
+
+  /* post card */
+  .post{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    margin-bottom:22px;
+    overflow:hidden;
+  }
+  .post-head{
+    display:flex; align-items:center; gap:10px;
+    padding:14px 16px 12px;
+  }
+  .post-head .avatar{ width:38px; height:38px; font-size:13px; flex-shrink:0; border:none; }
+  .post-head .who{ flex:1; min-width:0; }
+  .post-head .climber{ font-weight:600; font-size:14px; }
+  .post-head .crag{ font-size:12px; color:var(--slate); font-family:'JetBrains Mono',monospace; }
+  .post-head .time{ font-size:11px; color:var(--slate); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+
+  .media{
+    position:relative;
+    aspect-ratio:4/3;
+    overflow:hidden;
+    cursor:pointer;
+    user-select:none;
+  }
+  .media .grade-badge{
+    position:absolute; top:12px; right:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:600; font-size:13px;
+    padding:5px 11px;
+    border-radius:20px;
+    backdrop-filter:blur(3px);
+    z-index:2;
+  }
+  .media .route-name{
+    position:absolute; bottom:14px; left:16px;
+    font-family:'Fraunces',serif; font-weight:600; font-size:22px;
+    color:#fff;
+    text-shadow:0 2px 10px rgba(0,0,0,0.5);
+    z-index:2;
+  }
+  .media .style-tag{
+    position:absolute; bottom:16px; right:16px;
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    color:rgba(255,255,255,0.75);
+    text-transform:uppercase; letter-spacing:0.08em;
+    z-index:2;
+  }
+  .media::after{
+    content:'';
+    position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%);
+    z-index:1;
+  }
+  .topo-lines{
+    position:absolute; inset:0;
+    opacity:0.5;
+  }
+
+  .stamp{
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%) rotate(-18deg) scale(0);
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700; font-size:34px;
+    letter-spacing:0.12em;
+    color:var(--moss);
+    border:4px solid var(--moss);
+    padding:8px 22px;
+    border-radius:8px;
+    z-index:3;
+    pointer-events:none;
+    opacity:0;
+  }
+  .stamp.play{
+    animation:stampIn 0.5s cubic-bezier(.2,1.4,.4,1) forwards;
+  }
+  @keyframes stampIn{
+    0%{ transform:translate(-50%,-50%) rotate(-18deg) scale(2.2); opacity:0; }
+    55%{ transform:translate(-50%,-50%) rotate(-14deg) scale(0.92); opacity:1; }
+    75%{ transform:translate(-50%,-50%) rotate(-16deg) scale(1.06); opacity:1;}
+    100%{ transform:translate(-50%,-50%) rotate(-15deg) scale(1); opacity:1; }
+  }
+
+  .actions{
+    display:flex; align-items:center; gap:16px;
+    padding:12px 16px 4px;
+  }
+  .act-btn{
+    background:none; border:none; color:var(--slate);
+    display:flex; align-items:center; gap:6px;
+    font-size:13px; cursor:pointer; padding:4px 0;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .act-btn:hover{ color:var(--chalk); }
+  .act-btn.active{ color:var(--moss); }
+  .act-btn .icon{ font-size:16px; line-height:1; }
+  .spacer{ flex:1; }
+
+  .post-body{ padding:6px 16px 16px; }
+  .chalk-count{ font-size:13px; font-weight:600; margin-bottom:6px; }
+  .chalk-count b{ color:var(--moss); }
+  .caption{ font-size:14px; line-height:1.5; margin-bottom:8px; }
+  .caption b{ font-weight:600; margin-right:6px; }
+  .beta-preview{ font-size:13px; color:var(--slate); margin-bottom:10px; }
+  .beta-preview span{ color:var(--chalk); font-weight:500; }
+
+  .comment-row{
+    display:flex; gap:8px; align-items:center;
+    border-top:1px solid var(--line);
+    padding-top:10px;
+  }
+  .comment-row input{
+    flex:1;
+    background:none; border:none; outline:none;
+    color:var(--chalk); font-size:13px;
+    font-family:'Work Sans',sans-serif;
+  }
+  .comment-row input::placeholder{ color:var(--slate); }
+  .comment-row button{
+    background:none; border:none; color:var(--rope);
+    font-size:12px; font-weight:600; cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+    opacity:0.5; pointer-events:none;
+  }
+  .comment-row input:not(:placeholder-shown) + button{ opacity:1; pointer-events:auto; }
+
+  /* sidebar */
+  .side{ padding:22px 18px; }
+  .side-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:18px;
+  }
+  .side-card h3{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--slate); margin:0 0 12px;
+    font-weight:500;
+  }
+  .rack-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 0; border-bottom:1px solid var(--line); font-size:13px;
+  }
+  .rack-item:last-child{ border-bottom:none; }
+  .rack-item .g{
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    padding:2px 8px; border-radius:20px;
+  }
+  .suggest-row{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 0;
+  }
+  .suggest-row .avatar{ width:34px; height:34px; font-size:12px; border:none; flex-shrink:0; }
+  .suggest-row .info{ flex:1; min-width:0; }
+  .suggest-row .name{ font-size:13px; font-weight:500; }
+  .suggest-row .sub{ font-size:11px; color:var(--slate); font-family:'JetBrains Mono',monospace; }
+  .follow-btn{
+    background:none; border:1px solid var(--line);
+    color:var(--chalk); font-size:11px; font-weight:600;
+    padding:6px 12px; border-radius:20px; cursor:pointer;
+    font-family:'JetBrains Mono',monospace;
+    white-space:nowrap;
+  }
+  .follow-btn.following{ background:var(--panel-2); color:var(--slate); }
+  .follow-btn:hover{ border-color:var(--rope); }
+
+  ::selection{ background:var(--rope-dim); }
+  button:focus-visible, input:focus-visible, .partner:focus-visible{
+    outline:2px solid var(--rope); outline-offset:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .stamp.play{ animation:none; opacity:1; transform:translate(-50%,-50%) rotate(-15deg) scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <header>
+    <div class="logo"><span class="mark"></span> Anchor</div>
+    <div class="hdr-icons">
+      <span>search</span>
+      <span>alerts</span>
+      <span>rack</span>
+    </div>
+  </header>
+
+  <main id="feed">
+    <div class="rail" id="rail"></div>
+    <!-- posts injected here -->
+  </main>
+
+  <aside class="side">
+    <div class="side-card">
+      <h3>Your rack — projects</h3>
+      <div id="rackList"></div>
+    </div>
+    <div class="side-card">
+      <h3>Partners to follow</h3>
+      <div id="suggestList"></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const gradeColors = {
+  V: { bg:'rgba(107,143,113,0.22)', fg:'#9CC2A2' },
+  YDS: { bg:'rgba(193,84,44,0.22)', fg:'#E19A78' }
+};
+
+function topoSVG(seed){
+  const hue = seed % 3;
+  const bases = [
+    ['#3B342C','#2A241D'],
+    ['#33342C','#242620'],
+    ['#342C2C','#241E1E']
+  ][hue];
+  let circles = '';
+  for (let i=0;i<5;i++){
+    const cx = (seed*37 + i*61) % 100;
+    const cy = (seed*53 + i*29) % 100;
+    const r = 20 + ((seed+i)*13)%60;
+    circles += `<circle cx="${cx}%" cy="${cy}%" r="${r}" fill="none" stroke="rgba(240,235,224,0.08)" stroke-width="1"/>`;
+  }
+  return `<svg class="topo-lines" viewBox="0 0 100 100" preserveAspectRatio="none" width="100%" height="100%">
+    <rect width="100" height="100" fill="${bases[0]}"/>
+    <rect width="100" height="100" fill="${bases[1]}" opacity="0.4"/>
+    ${circles}
+  </svg>`;
+}
+
+const posts = [
+  { climber:'Reyna O.', crag:'Bishop, CA', time:'2h', route:'Ranger Rick', grade:'V4', gtype:'V', style:'flash', chalk:412, caption:"Sat with this one for weeks. Heel hook on the lip finally clicked.", beta:'"the heel-toe cam on the last move is everything" — Marco', seed:1 },
+  { climber:'Theo K.', crag:'Red River Gorge, KY', time:'4h', route:'Fifty Ways to Leave Your Lover', grade:'5.12a', gtype:'YDS', style:'redpoint · 6 tries', chalk:298, caption:"Six burns and a lot of skin left on that crux pocket. Worth every one.", beta:'"clip before the pocket, not after" — Danika', seed:2 },
+  { climber:'Priya N.', crag:'Fontainebleau, FR', time:'7h', route:'La Marie Rose', grade:'V2', gtype:'V', style:'onsight', chalk:531, caption:"Sandstone slopers in the rain, somehow still perfect. Forest was empty at 7am.", beta:'"trust your feet more than you want to" — Jules', seed:3 },
+  { climber:'Sam A.', crag:'Rifle, CO', time:'1d', route:'Zulu', grade:'5.13a', gtype:'YDS', style:'redpoint · project, day 9', chalk:187, caption:"Still not sent. Fell at the anchor again. Going back Thursday.", beta:'"drop your right hip on the last clip" — Reyna', seed:4 },
+];
+
+const rack = [
+  { name:'The Nose', grade:'5.14a', gtype:'YDS' },
+  { name:'Midnight Lightning', grade:'V8', gtype:'V' },
+  { name:'Dreamcatcher', grade:'5.14d', gtype:'YDS' },
+];
+
+const suggestions = [
+  { name:'Danika P.', sub:'127 sends this year' },
+  { name:'Marco T.', sub:'follows 3 of your partners' },
+  { name:'Jules F.', sub:'climbs at Fontainebleau' },
+];
+
+const feed = document.getElementById('feed');
+const rail = document.getElementById('rail');
+
+function initials(name){
+  return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+// partner rail
+posts.forEach((p, i) => {
+  const el = document.createElement('div');
+  el.className = 'partner';
+  el.tabIndex = 0;
+  el.innerHTML = `
+    <div class="avatar-ring ${i>1?'seen':''}"><div class="avatar">${initials(p.climber)}</div></div>
+    <div class="name">${p.climber.split(' ')[0]}</div>
+  `;
+  rail.appendChild(el);
+});
+
+// posts
+posts.forEach((p, idx) => {
+  const gc = gradeColors[p.gtype];
+  const card = document.createElement('div');
+  card.className = 'post';
+  card.innerHTML = `
+    <div class="post-head">
+      <div class="avatar">${initials(p.climber)}</div>
+      <div class="who">
+        <div class="climber">${p.climber}</div>
+        <div class="crag">${p.crag}</div>
+      </div>
+      <div class="time">${p.time}</div>
+    </div>
+    <div class="media" data-idx="${idx}">
+      ${topoSVG(p.seed)}
+      <div class="grade-badge" style="background:${gc.bg};color:${gc.fg};">${p.grade}</div>
+      <div class="route-name">${p.route}</div>
+      <div class="style-tag">${p.style}</div>
+      <div class="stamp" id="stamp-${idx}">SENT</div>
+    </div>
+    <div class="actions">
+      <button class="act-btn chalk-btn" data-idx="${idx}"><span class="icon">◆</span> chalk up</button>
+      <button class="act-btn"><span class="icon">◈</span> beta</button>
+      <button class="act-btn"><span class="icon">↗</span> share</button>
+      <div class="spacer"></div>
+      <button class="act-btn save-btn" data-idx="${idx}"><span class="icon">▤</span></button>
+    </div>
+    <div class="post-body">
+      <div class="chalk-count"><b id="count-${idx}">${p.chalk}</b> chalked this up</div>
+      <div class="caption"><b>${p.climber.split(' ')[0]}</b>${p.caption}</div>
+      <div class="beta-preview">Top beta: <span>${p.beta}</span></div>
+    </div>
+    <div class="comment-row">
+      <input type="text" placeholder="Add beta…" data-idx="${idx}">
+      <button data-idx="${idx}">post</button>
+    </div>
+  `;
+  feed.appendChild(card);
+});
+
+// chalk-up (like) interaction with stamp animation
+document.querySelectorAll('.chalk-btn').forEach(btn => {
+  btn.addEventListener('click', () => toggleChalk(btn.dataset.idx));
+});
+document.querySelectorAll('.media').forEach(m => {
+  m.addEventListener('dblclick', () => toggleChalk(m.dataset.idx, true));
+});
+
+const chalkedState = {};
+function toggleChalk(idx, forceOn){
+  const isOn = chalkedState[idx];
+  if (forceOn && isOn) return;
+  chalkedState[idx] = forceOn ? true : !isOn;
+
+  const countEl = document.getElementById('count-' + idx);
+  const btn = document.querySelector('.chalk-btn[data-idx="' + idx + '"]');
+  const stamp = document.getElementById('stamp-' + idx);
+  let count = parseInt(countEl.textContent, 10);
+
+  if (chalkedState[idx]) {
+    countEl.textContent = count + 1;
+    btn.classList.add('active');
+    stamp.classList.remove('play');
+    void stamp.offsetWidth;
+    stamp.classList.add('play');
+  } else {
+    countEl.textContent = Math.max(0, count - 1);
+    btn.classList.remove('active');
+    stamp.classList.remove('play');
+  }
+}
+
+// save toggle
+document.querySelectorAll('.save-btn').forEach(btn => {
+  btn.addEventListener('click', () => btn.classList.toggle('active'));
+});
+
+// comment enable/post
+document.querySelectorAll('.comment-row button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const idx = btn.dataset.idx;
+    const input = document.querySelector('.comment-row input[data-idx="' + idx + '"]');
+    if (input.value.trim()) {
+      input.value = '';
+      input.placeholder = 'Beta added ✓';
+      setTimeout(()=> input.placeholder = 'Add beta…', 1500);
+    }
+  });
+});
+
+// sidebar: rack
+const rackList = document.getElementById('rackList');
+rack.forEach(r => {
+  const gc = gradeColors[r.gtype];
+  const row = document.createElement('div');
+  row.className = 'rack-item';
+  row.innerHTML = `<span>${r.name}</span><span class="g" style="background:${gc.bg};color:${gc.fg};">${r.grade}</span>`;
+  rackList.appendChild(row);
+});
+
+// sidebar: suggestions
+const suggestList = document.getElementById('suggestList');
+suggestions.forEach(s => {
+  const row = document.createElement('div');
+  row.className = 'suggest-row';
+  row.innerHTML = `
+    <div class="avatar">${initials(s.name)}</div>
+    <div class="info">
+      <div class="name">${s.name}</div>
+      <div class="sub">${s.sub}</div>
+    </div>
+    <button class="follow-btn">follow</button>
+  `;
+  row.querySelector('.follow-btn').addEventListener('click', function(){
+    this.classList.toggle('following');
+    this.textContent = this.classList.contains('following') ? 'following' : 'follow';
+  });
+  suggestList.appendChild(row);
+});
+</script>
+
+</body>
+</html>
